@@ -7,6 +7,7 @@
 
 // import our sprite library
 #import "spritelib.asm"
+#import "textscroller.asm"
 #import "music/music.asm"
 
 BasicUpstart2(initialize)
@@ -14,6 +15,16 @@ BasicUpstart2(initialize)
 // Initialize
 initialize:
 	jsr $e544			// clear screen
+
+	lda #00 			// black sceen & background
+	sta $d020
+	sta $d021
+
+	lda #$ff
+	sta $d000			// set x position of sprite
+	
+	lda #$ff
+	sta $d001			// set y position of sprite
 	
 	lda #%00000011		// enable sprites
 	sta $d015
@@ -42,8 +53,11 @@ initialize:
 	sta $07f9			// sprite #2
 	
 	jsr init_spritelib
+	jsr initScroller		// setup text scroller
+	jsr initMusic		// setup music
 
-jsr startMusic
+	jsr interrupts		// setup interrupts
+
 loop:
 	lda #00					// wait until the screen refreshes
 !:	cmp $d012	
@@ -57,6 +71,29 @@ loop:
 
 jmp loop
 
+interrupts: sei					// set up interrupt
+			lda #$7f
+			sta $dc0d			// turn off the CIA interrupts
+			sta $dd0d
+			and $d011			// clear high bit of raster line
+			sta $d011		
+
+			ldy #00				// trigger on first scan line
+			sty $d012
+
+			lda #<handler		// load interrupt address
+			ldx #>handler
+			sta $0314
+			stx $0315
+
+			lda #$01 			// enable raster interrupts
+			sta $d01a
+			cli
+			rts
+
+handler:	jsr music.play
+			jsr noscroll
+			jmp $EA81
 
 // -- Sprite Data --------------------------------------------------------------
 // Created using https://www.spritemate.com
