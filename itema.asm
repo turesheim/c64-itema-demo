@@ -16,33 +16,33 @@
 #import "spritedata.asm"
 #import "spritelib.asm"
 #import "music/music.asm"
-
+//
 BasicUpstart2(initialize)
 	
 // Initialize
 initialize:
 	jsr $e544			// clear screen
-	
-	lda #%11111111		// enable sprites
+
+	lda #%11111111		// enable all sprites
 	sta $d015
-	
+
 	lda #$00			// disable xpand-y
 	sta $d017
-	
+
 	lda #$00			// set sprite/background priority
 	sta $d01b
 	
-	lda #$ff			// set multicolor
+	lda #$ff			// enable multicolor
 	sta $d01c
 	
 	lda #$00			// disable xpand-x
 	sta $d01d
 	
-	lda #$0f			// sprite multicolor 1
+	lda #$0f			// set sprite multicolor 1
 	sta $d025
-	lda #$0c			// sprite multicolor 2
+	lda #$0c			// set sprite multicolor 2
 	sta $d026
-	lda #$0a			// sprite individual color
+	lda #$0a			// set sprite individual color
 	sta $d027
 	
 	lda #spriteData/64	// set sprite data pointer
@@ -58,23 +58,26 @@ initialize:
 	//jsr startMusic
 
 loop:
-	lda #00					// wait until the screen refreshes
-!:	cmp $d012	
-	bne !-
-
 	lda #$00
 	sta spriteindex
 	animation_loop:
 		jsr horizontal
 		jsr vertical	
-		jsr draw_sprites
+		jsr draw_sprite
 		inc spriteindex
 		lda spriteindex
 		cmp #$08
 		beq done
 		jmp animation_loop
 	done:
-	
+		// Spend a few cycles doing nothing in order to get a smooth motion
+		ldy  #$10
+		ldx  #$01
+		delay:
+			dex
+			bne delay
+			dey
+			bne delay
 jmp loop
 
 // -- Sprite Data --------------------------------------------------------------

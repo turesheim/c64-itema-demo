@@ -13,24 +13,27 @@
 spriteindex:
 	 .byte $00
 
-
-// $0017, $31 <-> $0140, $e9
 spritemem:
-	//    +--------------------------- X-position least significant bits
-	//    |    +---------------------- X-position most significant bits
-	//    |    |    +----------------- Y-position least significant bits
-	//    |    |    |    +------------ Y-position most significant bits
-	//    |    |    |    |    +------- X-velocity (signed integer)
-	//    |    |    |    |    |    +-- Y-velocity (signed integer)
-	//    xl   xm   yl   ym   xv   yv
-	.byte $18, $00, $32, $00, $01, $01
-	.byte $18, $00, $42, $00, $02, $02
-	.byte $18, $00, $52, $00, $03, $03
-	.byte $18, $00, $62, $00, $01, $02
-	.byte $18, $00, $72, $00, $02, $01
-	.byte $18, $00, $82, $00, $02, $03
-	.byte $18, $00, $92, $00, $03, $02
-	.byte $18, $00, $a2, $00, $08, $08
+/*
+          +------------------------------------ X-location least significant bits
+          |    +------------------------------- X-location most significant bits
+          |    |    +-------------------------- Y-location least significant bits
+          |    |    |    +--------------------- Y-location most significant bits
+          |    |    |    |    +---------------- X-velocity (signed integer)
+          |    |    |    |    |    +----------- Y-velocity (signed integer)
+          |    |    |    |    |    |    +------ X-acceleration (signed integer)
+          |    |    |    |    |    |    |    +- Y-acceleration (signed integer)
+          |    |    |    |    |    |    |    |
+          xl   xm   yl   ym   xv   yv	xa	 ya
+*/
+	.byte $18, $00, $32, $00, $01, $00, $01, $00
+	.byte $18, $00, $42, $00, $02, $00, $01, $00
+	.byte $18, $00, $52, $00, $03, $00, $01, $00
+	.byte $18, $00, $62, $00, $01, $00, $01, $00
+	.byte $18, $00, $72, $00, $02, $00, $01, $00
+	.byte $18, $00, $82, $00, $02, $00, $01, $00
+	.byte $18, $00, $92, $00, $03, $00, $01, $00
+	.byte $18, $00, $a2, $00, $03, $00, $01, $00
 
 .var xl = 0
 .var xm = 1
@@ -38,12 +41,13 @@ spritemem:
 .var ym = 3
 .var xv = 4
 .var yv = 5
-.var spritelen = 6
-
+.var xa = 6
+.var ya = 7
+.var spritelen = 8
 
 ldx #0
 stx spriteindex
-jsr get_xm  // xm for 0 in a
+jsr get_xm					// xm for 0 in a
 
 get_xm:
 	php
@@ -71,6 +75,20 @@ get_yl:
 	jsr getspritebase		// Get spritebase in .A
 	clc						// Clear the carry flag
 	adc #yl					// Add index to get fieldaddr
+	jmp get_val
+
+get_ya:
+	php
+	jsr getspritebase		// Get spritebase in .A
+	clc						// Clear the carry flag
+	adc #ya					// Add index to get fieldaddr
+	jmp get_val
+
+get_xa:
+	php
+	jsr getspritebase		// Get spritebase in .A
+	clc						// Clear the carry flag
+	adc #xa					// Add index to get fieldaddr
 	jmp get_val
 
 get_xv:
@@ -126,6 +144,22 @@ store_yl:
 	adc #yl					// Add index to get fieldaddr
 	jmp store_val
 
+store_xa:
+	php
+	pha
+	jsr getspritebase		// Get spritebase in .A
+	clc
+	adc #xa					// Add index to get fieldaddr
+	jmp store_val
+
+store_ya:
+	php
+	pha
+	jsr getspritebase		// Get spritebase in .A
+	clc
+	adc #ya					// Add index to get fieldaddr
+	jmp store_val
+
 store_xv:
 	php
 	pha
@@ -140,7 +174,7 @@ store_yv:
 	jsr getspritebase		// Get spritebase in .A
 	clc
 	adc #yv					// Add index to get fieldaddr
-	// jmp store_val // -> next instr
+	// jmp store_val		// -> next instr
 
 store_val:
 	tax						// .A -> .X
@@ -148,7 +182,6 @@ store_val:
 	plp
 	sta spritemem,x			// load fieldaddr -> .A
 	rts
-
 
 // getspritebase -> .A  -- uses .X
 getspritebase:
